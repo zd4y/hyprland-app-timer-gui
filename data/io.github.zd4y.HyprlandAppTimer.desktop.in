@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=hyprland-app-timer-gui
+Exec=hyprland-app-timer-gui
+Icon=io.github.zd4y.HyprlandAppTimer
+Terminal=false
+Type=Application
+Categories=GTK;
+StartupNotify=true

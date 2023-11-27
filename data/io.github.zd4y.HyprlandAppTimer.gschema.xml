@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="hyprland-app-timer-gui">
+	<schema id="io.github.zd4y.HyprlandAppTimer" path="/io/github/zd4y/HyprlandAppTimer/">
+	</schema>
+</schemalist>
