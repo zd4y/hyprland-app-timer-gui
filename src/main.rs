@@ -27,8 +27,8 @@ use self::window::HyprlandAppTimerGuiWindow;
 
 use config::{GETTEXT_PACKAGE, LOCALEDIR, PKGDATADIR};
 use gettextrs::{bind_textdomain_codeset, bindtextdomain, textdomain};
-use gtk::{gio, glib};
 use gtk::prelude::*;
+use gtk::{gio, glib};
 
 fn main() -> glib::ExitCode {
     // Set up gettext translations
@@ -38,14 +38,18 @@ fn main() -> glib::ExitCode {
     textdomain(GETTEXT_PACKAGE).expect("Unable to switch to the text domain");
 
     // Load resources
-    let resources = gio::Resource::load(PKGDATADIR.to_owned() + "/hyprland-app-timer-gui.gresource")
-        .expect("Could not load resources");
+    let resources =
+        gio::Resource::load(PKGDATADIR.to_owned() + "/hyprland-app-timer-gui.gresource")
+            .expect("Could not load resources");
     gio::resources_register(&resources);
 
     // Create a new GtkApplication. The application manages our main loop,
     // application windows, integration with the window manager/compositor, and
     // desktop features such as file opening and single-instance applications.
-    let app = HyprlandAppTimerGuiApplication::new("io.github.zd4y.HyprlandAppTimer", &gio::ApplicationFlags::empty());
+    let app = HyprlandAppTimerGuiApplication::new(
+        "io.github.zd4y.HyprlandAppTimer",
+        &gio::ApplicationFlags::empty(),
+    );
 
     // Run the application. This function will block until the application
     // exits. Upon return, we have our exit code to return to the shell. (This
