@@ -9,6 +9,33 @@
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar" id="header_bar">
+            <child type="start">
+              <object class="GtkMenuButton">
+                <property name="label">Choose Date</property>
+                <property name="popover">
+                  <object class="GtkPopover">
+                    <child>
+                      <object class="GtkBox">
+                        <child>
+                          <object class="GtkCalendar" id="calendar_date_start"/>
+                        </child>
+                        <child>
+                          <object class="GtkCalendar" id="calendar_date_end">
+                            <property name="visible">false</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child type="start">
+              <object class="GtkCheckButton">
+                <property name="label">Date Range</property>
+                <signal name="toggled" handler="on_date_range_checkbox_toggled" swapped="true"/>
+              </object>
+            </child>
             <child type="end">
               <object class="GtkMenuButton">
                 <property name="primary">True</property>
@@ -20,11 +47,25 @@
           </object>
         </child>
         <property name="content">
-          <object class="GtkLabel" id="label">
-            <property name="label">Hello, World!</property>
-            <style>
-              <class name="title-1"/>
-            </style>
+          <object class="AdwOverlaySplitView">
+            <property name="sidebar">
+              <object class="GtkLabel">
+                <property name="label">Hello, World!</property>
+                <style>
+                  <class name="title-1"/>
+                </style>
+              </object>
+            </property>
+            <property name="content">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Another label</property>
+                  </object>
+                </child>
+              </object>
+            </property>
           </object>
         </property>
       </object>

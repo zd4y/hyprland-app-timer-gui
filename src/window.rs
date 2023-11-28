@@ -32,7 +32,9 @@ mod imp {
         #[template_child]
         pub header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
-        pub label: TemplateChild<gtk::Label>,
+        pub calendar_date_start: TemplateChild<gtk::Calendar>,
+        #[template_child]
+        pub calendar_date_end: TemplateChild<gtk::Calendar>,
     }
 
     #[glib::object_subclass]
@@ -43,10 +45,19 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.bind_template();
+            klass.bind_template_callbacks();
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
             obj.init_template();
+        }
+    }
+
+    #[gtk::template_callbacks]
+    impl HyprlandAppTimerGuiWindow {
+        #[template_callback]
+        fn on_date_range_checkbox_toggled(&self, checkbox: &gtk::CheckButton) {
+            self.calendar_date_end.set_visible(checkbox.is_active());
         }
     }
 
