@@ -1,4 +1,4 @@
 data/io.github.zd4y.HyprlandAppTimer.desktop.in
 data/io.github.zd4y.HyprlandAppTimer.metainfo.xml.in
 data/io.github.zd4y.HyprlandAppTimer.gschema.xml
-src/window.ui
+data/ui/window.ui

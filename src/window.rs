@@ -26,7 +26,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate)]
-    #[template(resource = "/io/github/zd4y/HyprlandAppTimer/window.ui")]
+    #[template(resource = "/io/github/zd4y/HyprlandAppTimer/ui/window.ui")]
     pub struct HyprlandAppTimerGuiWindow {
         // Template widgets
         #[template_child]

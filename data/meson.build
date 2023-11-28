@@ -1,3 +1,12 @@
+pkgdatadir = get_option('prefix') / get_option('datadir') / meson.project_name()
+
+gnome.compile_resources('hyprland-app-timer-gui',
+  'hyprland-app-timer-gui.gresource.xml',
+  gresource_bundle: true,
+  install: true,
+  install_dir: pkgdatadir,
+)
+
 desktop_file = i18n.merge_file(
         input: 'io.github.zd4y.HyprlandAppTimer.desktop.in',
        output: 'io.github.zd4y.HyprlandAppTimer.desktop',
