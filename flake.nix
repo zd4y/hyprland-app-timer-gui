@@ -20,6 +20,7 @@
           rustc
           cargo
           rustPlatform.cargoSetupHook
+          openssl
         ];
       in
       {

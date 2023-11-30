@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 gtk = { version = "0.7", package = "gtk4" }
+hyprland-app-timer = { path = "../hyprland-app-timer" }
+tokio = { version = "1.34.0", features = ["full"] }
 
 [dependencies.adw]
 package = "libadwaita"

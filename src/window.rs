@@ -23,6 +23,11 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 mod imp {
+    use std::cell::RefCell;
+
+    use hyprland_app_timer::blocking_client::BlockingClient;
+    use tokio::runtime::Runtime;
+
     use super::*;
 
     #[derive(Debug, Default, gtk::CompositeTemplate)]
@@ -35,6 +40,8 @@ mod imp {
         pub calendar_date_start: TemplateChild<gtk::Calendar>,
         #[template_child]
         pub calendar_date_end: TemplateChild<gtk::Calendar>,
+
+        rt: RefCell<Option<Runtime>>
     }
 
     #[glib::object_subclass]
@@ -61,7 +68,19 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for HyprlandAppTimerGuiWindow {}
+    impl ObjectImpl for HyprlandAppTimerGuiWindow {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let rt = tokio::runtime::Builder::new_multi_thread().worker_threads(1).enable_all().build().expect("failed to buid tokio runtime");
+            let handle = rt.handle().clone();
+            gio::spawn_blocking(move || {
+                handle.block_on(hyprland_app_timer::server::Server::save()).expect("failed to send save signal");
+            });
+
+            self.rt.borrow_mut().replace(rt);
+        }
+    }
     impl WidgetImpl for HyprlandAppTimerGuiWindow {}
     impl WindowImpl for HyprlandAppTimerGuiWindow {}
     impl ApplicationWindowImpl for HyprlandAppTimerGuiWindow {}
