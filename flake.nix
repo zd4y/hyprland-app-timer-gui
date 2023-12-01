@@ -30,6 +30,7 @@
           hyprland-app-timer-gui = pkgs.stdenv.mkDerivation {
             inherit nativeBuildInputs buildInputs;
             pname = "hyprland-app-timer-gui";
+            version = "0.1.0";
             src = pkgs.lib.cleanSource ./.;
             cargoDeps = pkgs.rustPlatform.importCargoLock {
               lockFile = ./Cargo.lock;
