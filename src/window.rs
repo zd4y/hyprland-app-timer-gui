@@ -23,15 +23,16 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 mod imp {
-    use std::{cell::RefCell, time::Duration};
+    use std::{cell::RefCell, sync::Arc, time::Duration};
 
     use chrono::{Days, Local, NaiveDate, TimeZone, Utc};
+    use gtk::glib::{Receiver, Sender};
     use hyprland_app_timer::{server::Server, AppUsage, Client};
     use tokio::runtime::Runtime;
 
     use super::*;
 
-    #[derive(Debug, Default, gtk::CompositeTemplate)]
+    #[derive(Debug, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/zd4y/HyprlandAppTimer/ui/window.ui")]
     pub struct HyprlandAppTimerGuiWindow {
         // Template widgets
@@ -42,10 +43,14 @@ mod imp {
         #[template_child]
         pub calendar_date_end: TemplateChild<gtk::Calendar>,
         #[template_child]
+        pub date_range_checkbox: TemplateChild<gtk::CheckButton>,
+        #[template_child]
         pub listbox: TemplateChild<gtk::ListBox>,
 
-        rt: RefCell<Option<Runtime>>,
-        client: RefCell<Option<Client>>,
+        sender: Sender<Message>,
+        receiver: RefCell<Option<Receiver<Message>>>,
+        rt: Runtime,
+        client: Arc<Client>,
     }
 
     #[glib::object_subclass]
@@ -69,6 +74,37 @@ mod imp {
         #[template_callback]
         fn on_date_range_checkbox_toggled(&self, checkbox: &gtk::CheckButton) {
             self.calendar_date_end.set_visible(checkbox.is_active());
+            self.on_date_change();
+        }
+
+        #[template_callback]
+        fn on_date_change(&self) {
+            let date_start = date_glib_to_chrono(&self.calendar_date_start.date());
+
+            let date_end = if self.date_range_checkbox.is_active() {
+                let date_end = self
+                    .calendar_date_end
+                    .date()
+                    .add_days(1)
+                    .expect("failed to add days");
+                date_glib_to_chrono(&date_end)
+            } else {
+                date_start
+                    .checked_add_days(Days::new(1))
+                    .expect("failed to add days")
+            };
+
+            let client = self.client.clone();
+            let sender = self.sender.clone();
+            self.rt.spawn(async move {
+                let apps_usage = client
+                    .get_apps_usage(date_start, date_end)
+                    .await
+                    .expect("failed to get apps usage");
+                sender
+                    .send(Message::AppsUsage(apps_usage))
+                    .expect("failed to send apps usage");
+            });
         }
     }
 
@@ -76,34 +112,15 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let rt = tokio::runtime::Builder::new_multi_thread()
-                .worker_threads(1)
-                .enable_all()
-                .build()
-                .expect("failed to buid tokio runtime");
-
-            let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
-
             let initial_datetime = self.calendar_date_start.date();
 
-            rt.spawn(async move {
+            let client = self.client.clone();
+            let sender = self.sender.clone();
+
+            self.rt.spawn(async move {
                 Server::save().await.expect("failed to send save signal");
 
-                let client = Client::new().await.expect("failed to get client");
-
-                let initial_datetime = NaiveDate::from_ymd_opt(
-                    initial_datetime.year(),
-                    initial_datetime.month() as u32,
-                    initial_datetime.day_of_month() as u32,
-                )
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap();
-
-                let date_start = Local
-                    .from_local_datetime(&initial_datetime)
-                    .unwrap()
-                    .with_timezone(&Utc);
+                let date_start = date_glib_to_chrono(&initial_datetime);
                 let date_end = date_start.checked_add_days(Days::new(1)).unwrap();
 
                 let apps_usage = client
@@ -112,30 +129,20 @@ mod imp {
                     .expect("failed to get apps usage");
 
                 sender
-                    .send(Message::Client(client))
-                    .expect("failed to send client");
-
-                sender
                     .send(Message::AppsUsage(apps_usage))
                     .expect("failed to send apps usage");
             });
 
-            receiver.attach(None, glib::clone!(@weak self as this => @default-return glib::ControlFlow::Continue, move |msg| {
+            self.receiver.take().unwrap().attach(None, glib::clone!(@weak self as this => @default-return glib::ControlFlow::Continue, move |msg| {
                 this.handle_message(msg);
                 glib::ControlFlow::Continue
             }));
-
-            self.rt.replace(Some(rt));
         }
     }
 
     impl HyprlandAppTimerGuiWindow {
         fn handle_message(&self, msg: Message) {
             match msg {
-                Message::Client(client) => {
-                    self.client.replace(Some(client));
-                }
-
                 Message::AppsUsage(apps_usage) => {
                     while let Some(child) = self.listbox.last_child() {
                         self.listbox.remove(&child);
@@ -167,16 +174,52 @@ mod imp {
     impl ApplicationWindowImpl for HyprlandAppTimerGuiWindow {}
     impl AdwApplicationWindowImpl for HyprlandAppTimerGuiWindow {}
 
+    impl Default for HyprlandAppTimerGuiWindow {
+        fn default() -> Self {
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(1)
+                .enable_all()
+                .build()
+                .expect("failed to buid tokio runtime");
+            let client = rt.block_on(Client::new()).expect("failed to get client");
+            let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
+            HyprlandAppTimerGuiWindow {
+                header_bar: Default::default(),
+                calendar_date_start: Default::default(),
+                calendar_date_end: Default::default(),
+                listbox: Default::default(),
+                date_range_checkbox: Default::default(),
+                sender,
+                receiver: RefCell::new(Some(receiver)),
+                rt,
+                client: Arc::new(client),
+            }
+        }
+    }
+
     #[derive(Debug)]
     enum Message {
-        Client(Client),
         AppsUsage(Vec<AppUsage>),
+    }
+
+    fn date_glib_to_chrono(date: &glib::DateTime) -> chrono::DateTime<Utc> {
+        let date =
+            NaiveDate::from_ymd_opt(date.year(), date.month() as u32, date.day_of_month() as u32)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap();
+
+        Local
+            .from_local_datetime(&date)
+            .unwrap()
+            .with_timezone(&Utc)
     }
 }
 
 glib::wrapper! {
     pub struct HyprlandAppTimerGuiWindow(ObjectSubclass<imp::HyprlandAppTimerGuiWindow>)
-        @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow,        @implements gio::ActionGroup, gio::ActionMap;
+        @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow,
+          @implements gio::ActionGroup, gio::ActionMap;
 }
 
 impl HyprlandAppTimerGuiWindow {

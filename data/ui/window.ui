@@ -17,11 +17,22 @@
                     <child>
                       <object class="GtkBox">
                         <child>
-                          <object class="GtkCalendar" id="calendar_date_start"/>
+                          <object class="GtkCalendar" id="calendar_date_start">
+                            <signal name="day-selected" handler="on_date_change" swapped="true"/>
+                            <signal name="next-month" handler="on_date_change" swapped="true"/>
+                            <signal name="next-year" handler="on_date_change" swapped="true"/>
+                            <signal name="prev-month" handler="on_date_change" swapped="true"/>
+                            <signal name="prev-year" handler="on_date_change" swapped="true"/>
+                          </object>
                         </child>
                         <child>
                           <object class="GtkCalendar" id="calendar_date_end">
                             <property name="visible">false</property>
+                            <signal name="day-selected" handler="on_date_change" swapped="true"/>
+                            <signal name="next-month" handler="on_date_change" swapped="true"/>
+                            <signal name="next-year" handler="on_date_change" swapped="true"/>
+                            <signal name="prev-month" handler="on_date_change" swapped="true"/>
+                            <signal name="prev-year" handler="on_date_change" swapped="true"/>
                           </object>
                         </child>
                       </object>
@@ -31,7 +42,7 @@
               </object>
             </child>
             <child type="start">
-              <object class="GtkCheckButton">
+              <object class="GtkCheckButton" id="date_range_checkbox">
                 <property name="label">Date Range</property>
                 <signal name="toggled" handler="on_date_range_checkbox_toggled" swapped="true"/>
               </object>
