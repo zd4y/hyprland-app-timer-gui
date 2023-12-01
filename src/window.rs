@@ -25,7 +25,7 @@ use gtk::{gio, glib};
 mod imp {
     use std::cell::RefCell;
 
-    use hyprland_app_timer::blocking_client::BlockingClient;
+    use hyprland_app_timer::{server::Server, Client};
     use tokio::runtime::Runtime;
 
     use super::*;
@@ -41,7 +41,8 @@ mod imp {
         #[template_child]
         pub calendar_date_end: TemplateChild<gtk::Calendar>,
 
-        rt: RefCell<Option<Runtime>>
+        rt: RefCell<Option<Runtime>>,
+        client: RefCell<Option<Client>>,
     }
 
     #[glib::object_subclass]
@@ -72,19 +73,42 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let rt = tokio::runtime::Builder::new_multi_thread().worker_threads(1).enable_all().build().expect("failed to buid tokio runtime");
-            let handle = rt.handle().clone();
-            gio::spawn_blocking(move || {
-                handle.block_on(hyprland_app_timer::server::Server::save()).expect("failed to send save signal");
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(1)
+                .enable_all()
+                .build()
+                .expect("failed to buid tokio runtime");
+
+            let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
+
+            rt.spawn(async move {
+                Server::save().await.expect("failed to send save signal");
+                let client = Client::new().await.expect("failed to get client");
+                sender
+                    .send(Message::Client(client))
+                    .expect("failed to send client");
             });
 
-            self.rt.borrow_mut().replace(rt);
+            receiver.attach(None, glib::clone!(@weak self as this => @default-return glib::ControlFlow::Continue, move |msg| {
+                match msg {
+                    Message::Client(client) => {
+                        this.client.replace(Some(client));
+                    }
+                }
+                glib::ControlFlow::Continue
+            }));
+
+            self.rt.replace(Some(rt));
         }
     }
     impl WidgetImpl for HyprlandAppTimerGuiWindow {}
     impl WindowImpl for HyprlandAppTimerGuiWindow {}
     impl ApplicationWindowImpl for HyprlandAppTimerGuiWindow {}
     impl AdwApplicationWindowImpl for HyprlandAppTimerGuiWindow {}
+
+    enum Message {
+        Client(Client),
+    }
 }
 
 glib::wrapper! {
