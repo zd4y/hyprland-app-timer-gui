@@ -974,6 +974,7 @@ dependencies = [
 [[package]]
 name = "hyprland-app-timer"
 version = "0.1.0"
+source = "git+https://github.com/zd4y/hyprland-app-timer.git#f8ddd53393e4bf365bf3a0f769663ad52a6b282c"
 dependencies = [
  "anyhow",
  "chrono",
@@ -998,6 +999,7 @@ dependencies = [
  "humantime",
  "hyprland-app-timer",
  "libadwaita",
+ "pangocairo",
  "tokio",
 ]
 
@@ -1485,6 +1487,32 @@ dependencies = [
  "glib-sys",
  "gobject-sys",
  "libc",
+ "system-deps",
+]
+
+[[package]]
+name = "pangocairo"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57036589a9cfcacf83f9e606d15813fc6bf03f0e9e69aa2b5e3bb85af86b38a5"
+dependencies = [
+ "cairo-rs",
+ "glib",
+ "libc",
+ "pango",
+ "pangocairo-sys",
+]
+
+[[package]]
+name = "pangocairo-sys"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc3c8ff676a37e7a72ec1d5fc029f91c407278083d2752784ff9f5188c108833"
+dependencies = [
+ "cairo-sys-rs",
+ "glib-sys",
+ "libc",
+ "pango-sys",
  "system-deps",
 ]
 

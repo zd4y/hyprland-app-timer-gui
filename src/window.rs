@@ -30,14 +30,14 @@ mod imp {
     use hyprland_app_timer::{server::Server, AppUsage, Client};
     use tokio::runtime::Runtime;
 
+    use crate::pie_chart::{PieChart, PieChartItem};
+
     use super::*;
 
     #[derive(Debug, gtk::CompositeTemplate)]
     #[template(resource = "/io/github/zd4y/HyprlandAppTimer/ui/window.ui")]
     pub struct HyprlandAppTimerGuiWindow {
         // Template widgets
-        #[template_child]
-        pub header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         pub calendar_date_start: TemplateChild<gtk::Calendar>,
         #[template_child]
@@ -46,6 +46,8 @@ mod imp {
         pub date_range_checkbox: TemplateChild<gtk::CheckButton>,
         #[template_child]
         pub listbox: TemplateChild<gtk::ListBox>,
+        #[template_child]
+        pub pie_chart: TemplateChild<PieChart>,
 
         sender: Sender<Message>,
         receiver: RefCell<Option<Receiver<Message>>>,
@@ -146,11 +148,16 @@ mod imp {
         fn handle_message(&self, msg: Message) {
             match msg {
                 Message::AppsUsage(apps_usage) => {
+                    self.pie_chart.clear();
                     while let Some(child) = self.listbox.last_child() {
                         self.listbox.remove(&child);
                     }
 
+                    let mut total = 0.0;
+
                     for app_usage in apps_usage {
+                        // add apps to listbox
+
                         let row = gtk::ListBoxRow::new();
                         let container = gtk::Box::new(gtk::Orientation::Horizontal, 20);
                         let title = gtk::Label::new(Some(&app_usage.app));
@@ -165,7 +172,16 @@ mod imp {
                         container.append(&duration);
                         row.set_child(Some(&container));
                         self.listbox.append(&row);
+
+                        let seconds = app_usage.duration.as_secs_f64();
+
+                        // add apps to pie chart
+                        self.pie_chart.add_item(&PieChartItem::new(&app_usage.app, seconds));
+
+                        total += seconds;
                     }
+
+                    self.pie_chart.set_title(humantime::format_duration(Duration::from_secs_f64(total.round())).to_string());
                 }
             }
         }
@@ -186,7 +202,6 @@ mod imp {
             let client = rt.block_on(Client::new()).expect("failed to get client");
             let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
             HyprlandAppTimerGuiWindow {
-                header_bar: Default::default(),
                 calendar_date_start: Default::default(),
                 calendar_date_end: Default::default(),
                 listbox: Default::default(),
@@ -195,6 +210,7 @@ mod imp {
                 receiver: RefCell::new(Some(receiver)),
                 rt,
                 client: Arc::new(client),
+                pie_chart: Default::default(),
             }
         }
     }

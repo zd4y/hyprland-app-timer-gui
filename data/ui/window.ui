@@ -8,7 +8,7 @@
     <property name="content">
       <object class="AdwToolbarView">
         <child type="top">
-          <object class="AdwHeaderBar" id="header_bar">
+          <object class="AdwHeaderBar">
             <child type="start">
               <object class="GtkMenuButton">
                 <property name="label">Choose Date</property>
@@ -72,14 +72,7 @@
               </object>
             </property>
             <property name="content">
-              <object class="GtkBox">
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="label">Another label</property>
-                  </object>
-                </child>
-              </object>
+              <object class="PieChart" id="pie_chart"/>
             </property>
           </object>
         </property>

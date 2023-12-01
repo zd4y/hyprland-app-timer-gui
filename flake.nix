@@ -12,25 +12,30 @@
           meson
           gettext
           glib
-          gtk4
-          libadwaita
           desktop-file-utils
           ninja
           pkg-config
           rustc
           cargo
           rustPlatform.cargoSetupHook
+        ];
+        buildInputs = with pkgs; [
+          gtk4
+          libadwaita
           openssl
         ];
       in
       {
         packages = rec {
           hyprland-app-timer-gui = pkgs.stdenv.mkDerivation {
-            inherit nativeBuildInputs;
+            inherit nativeBuildInputs buildInputs;
             name = "hyprland-app-timer-gui";
             src = pkgs.lib.cleanSource ./.;
             cargoDeps = pkgs.rustPlatform.importCargoLock {
               lockFile = ./Cargo.lock;
+              outputHashes = {
+                "hyprland-app-timer-0.1.0" = "sha256-7uk0MnZIPBRhdbem7PW2s9oAxCi1GrUg/yH2JMwxDoE=";
+              };
             };
             mesonFlags = [ "--buildtype=release" ];
           };
@@ -38,10 +43,10 @@
         };
         devShells.default = pkgs.mkShell {
           inherit nativeBuildInputs;
-          buildInputs = with pkgs; [
+          buildInputs = buildInputs ++ (with pkgs; [
             clippy
             rustfmt
-          ];
+          ]);
         };
       }
     );
