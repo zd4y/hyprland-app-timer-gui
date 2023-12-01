@@ -118,7 +118,9 @@ mod imp {
             let sender = self.sender.clone();
 
             self.rt.spawn(async move {
-                Server::save().await.expect("failed to send save signal");
+                Server::save_waiting()
+                    .await
+                    .expect("failed to send save waiting signal");
 
                 let date_start = date_glib_to_chrono(&initial_datetime);
                 let date_end = date_start.checked_add_days(Days::new(1)).unwrap();
