@@ -992,8 +992,10 @@ dependencies = [
 name = "hyprland-app-timer-gui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "gettext-rs",
  "gtk4",
+ "humantime",
  "hyprland-app-timer",
  "libadwaita",
  "tokio",

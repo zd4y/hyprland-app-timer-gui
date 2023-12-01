@@ -23,9 +23,10 @@ use gtk::prelude::*;
 use gtk::{gio, glib};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, time::Duration};
 
-    use hyprland_app_timer::{server::Server, Client};
+    use chrono::{Days, Local, NaiveDate, TimeZone, Utc};
+    use hyprland_app_timer::{server::Server, AppUsage, Client};
     use tokio::runtime::Runtime;
 
     use super::*;
@@ -40,6 +41,8 @@ mod imp {
         pub calendar_date_start: TemplateChild<gtk::Calendar>,
         #[template_child]
         pub calendar_date_end: TemplateChild<gtk::Calendar>,
+        #[template_child]
+        pub listbox: TemplateChild<gtk::ListBox>,
 
         rt: RefCell<Option<Runtime>>,
         client: RefCell<Option<Client>>,
@@ -81,33 +84,93 @@ mod imp {
 
             let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
 
+            let initial_datetime = self.calendar_date_start.date();
+
             rt.spawn(async move {
                 Server::save().await.expect("failed to send save signal");
+
                 let client = Client::new().await.expect("failed to get client");
+
+                let initial_datetime = NaiveDate::from_ymd_opt(
+                    initial_datetime.year(),
+                    initial_datetime.month() as u32,
+                    initial_datetime.day_of_month() as u32,
+                )
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap();
+
+                let date_start = Local
+                    .from_local_datetime(&initial_datetime)
+                    .unwrap()
+                    .with_timezone(&Utc);
+                let date_end = date_start.checked_add_days(Days::new(1)).unwrap();
+
+                let apps_usage = client
+                    .get_apps_usage(date_start, date_end)
+                    .await
+                    .expect("failed to get apps usage");
+
                 sender
                     .send(Message::Client(client))
                     .expect("failed to send client");
+
+                sender
+                    .send(Message::AppsUsage(apps_usage))
+                    .expect("failed to send apps usage");
             });
 
             receiver.attach(None, glib::clone!(@weak self as this => @default-return glib::ControlFlow::Continue, move |msg| {
-                match msg {
-                    Message::Client(client) => {
-                        this.client.replace(Some(client));
-                    }
-                }
+                this.handle_message(msg);
                 glib::ControlFlow::Continue
             }));
 
             self.rt.replace(Some(rt));
         }
     }
+
+    impl HyprlandAppTimerGuiWindow {
+        fn handle_message(&self, msg: Message) {
+            match msg {
+                Message::Client(client) => {
+                    self.client.replace(Some(client));
+                }
+
+                Message::AppsUsage(apps_usage) => {
+                    while let Some(child) = self.listbox.last_child() {
+                        self.listbox.remove(&child);
+                    }
+
+                    for app_usage in apps_usage {
+                        let row = gtk::ListBoxRow::new();
+                        let container = gtk::Box::new(gtk::Orientation::Horizontal, 20);
+                        let title = gtk::Label::new(Some(&app_usage.app));
+                        title.add_css_class("heading");
+                        let duration = Duration::from_secs(app_usage.duration.as_secs());
+                        let duration = gtk::Label::new(Some(
+                            &humantime::format_duration(duration).to_string(),
+                        ));
+                        duration.set_halign(gtk::Align::End);
+                        duration.set_hexpand(true);
+                        container.append(&title);
+                        container.append(&duration);
+                        row.set_child(Some(&container));
+                        self.listbox.append(&row);
+                    }
+                }
+            }
+        }
+    }
+
     impl WidgetImpl for HyprlandAppTimerGuiWindow {}
     impl WindowImpl for HyprlandAppTimerGuiWindow {}
     impl ApplicationWindowImpl for HyprlandAppTimerGuiWindow {}
     impl AdwApplicationWindowImpl for HyprlandAppTimerGuiWindow {}
 
+    #[derive(Debug)]
     enum Message {
         Client(Client),
+        AppsUsage(Vec<AppUsage>),
     }
 }
 

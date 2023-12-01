@@ -49,11 +49,15 @@
         <property name="content">
           <object class="AdwOverlaySplitView">
             <property name="sidebar">
-              <object class="GtkLabel">
-                <property name="label">Hello, World!</property>
-                <style>
-                  <class name="title-1"/>
-                </style>
+              <object class="GtkScrolledWindow">
+                <property name="hscrollbar-policy">never</property>
+                <child>
+                  <object class="GtkListBox" id="listbox">
+                    <style>
+                      <class name="navigation-sidebar"/>
+                    </style>
+                  </object>
+                </child>
               </object>
             </property>
             <property name="content">
