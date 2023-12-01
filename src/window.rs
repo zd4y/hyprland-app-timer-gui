@@ -176,12 +176,16 @@ mod imp {
                         let seconds = app_usage.duration.as_secs_f64();
 
                         // add apps to pie chart
-                        self.pie_chart.add_item(&PieChartItem::new(&app_usage.app, seconds));
+                        self.pie_chart
+                            .add_item(&PieChartItem::new(&app_usage.app, seconds));
 
                         total += seconds;
                     }
 
-                    self.pie_chart.set_title(humantime::format_duration(Duration::from_secs_f64(total.round())).to_string());
+                    self.pie_chart.set_title(
+                        humantime::format_duration(Duration::from_secs_f64(total.round()))
+                            .to_string(),
+                    );
                 }
             }
         }

@@ -20,8 +20,8 @@
 
 mod application;
 mod config;
-mod window;
 mod pie_chart;
+mod window;
 
 use self::application::HyprlandAppTimerGuiApplication;
 use self::window::HyprlandAppTimerGuiWindow;

@@ -93,7 +93,10 @@ mod imp {
             let highlighted_item_index = self.highlighted_item_index.get();
 
             let total: f64 = items.iter().map(|item| item.weight()).sum();
-            let new_items: Vec<_> = items.iter().filter(|item| item.weight() / total >= MIN_WEIGHT_RATIO).collect();
+            let new_items: Vec<_> = items
+                .iter()
+                .filter(|item| item.weight() / total >= MIN_WEIGHT_RATIO)
+                .collect();
             let total: f64 = new_items.iter().map(|item| item.weight()).sum();
 
             let mut acc = 0.0;
@@ -204,12 +207,18 @@ glib::wrapper! {
 impl PieChart {
     pub fn add_item(&self, item: &PieChartItem) {
         let imp = self.imp();
-        imp.items.borrow_mut().push(item.clone());
+        {
+            imp.items.borrow_mut().push(item.clone());
+        }
+        self.queue_draw();
     }
 
     pub fn clear(&self) {
         let imp = self.imp();
-        imp.items.borrow_mut().clear();
+        {
+            imp.items.borrow_mut().clear();
+        }
+        self.queue_draw();
     }
 }
 
