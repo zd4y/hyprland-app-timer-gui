@@ -1,5 +1,5 @@
 [Desktop Entry]
-Name=hyprland-app-timer-gui
+Name=Hyprland App Timer
 Exec=hyprland-app-timer-gui
 Icon=io.github.zd4y.HyprlandAppTimer
 Terminal=false
