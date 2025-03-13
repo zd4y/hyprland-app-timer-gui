@@ -35,7 +35,7 @@
             cargoDeps = pkgs.rustPlatform.importCargoLock {
               lockFile = ./Cargo.lock;
               outputHashes = {
-                "hyprland-app-timer-0.1.0" = "sha256-7uk0MnZIPBRhdbem7PW2s9oAxCi1GrUg/yH2JMwxDoE=";
+                "hyprland-app-timer-0.1.0" = "sha256-OjfXRaqMz/tLrpPpobbPyRg4oZcyRw6WNrmWL9xWfhQ=";
               };
             };
             mesonFlags = [ "--buildtype=release" ];
