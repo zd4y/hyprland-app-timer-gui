@@ -8,7 +8,7 @@ chrono = "0.4.31"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 gtk = { version = "0.7", package = "gtk4" }
 humantime = "2.1.0"
-hyprland-app-timer = { git = "https://github.com/zd4y/hyprland-app-timer.git" }
+hyprland-app-timer = { git = "https://github.com/zd4y/hyprland-app-timer.git", features = ["db", "client"] }
 pangocairo = "0.18.0"
 tokio = { version = "1.34.0", features = ["full"] }
 

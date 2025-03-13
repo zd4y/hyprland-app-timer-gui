@@ -27,7 +27,7 @@ mod imp {
 
     use chrono::{Days, Local, NaiveDate, TimeZone, Utc};
     use gtk::glib::{Receiver, Sender};
-    use hyprland_app_timer::{server::Server, AppUsage, Client};
+    use hyprland_app_timer::{AppUsage, Client, SqliteDB};
     use tokio::runtime::Runtime;
 
     use crate::pie_chart::{PieChart, PieChartItem};
@@ -52,7 +52,7 @@ mod imp {
         sender: Sender<Message>,
         receiver: RefCell<Option<Receiver<Message>>>,
         rt: Runtime,
-        client: Arc<Client>,
+        db: Arc<SqliteDB>,
     }
 
     #[glib::object_subclass]
@@ -96,10 +96,10 @@ mod imp {
                     .expect("failed to add days")
             };
 
-            let client = self.client.clone();
+            let db = self.db.clone();
             let sender = self.sender.clone();
             self.rt.spawn(async move {
-                let apps_usage = client
+                let apps_usage = db
                     .get_apps_usage(date_start, date_end)
                     .await
                     .expect("failed to get apps usage");
@@ -116,18 +116,23 @@ mod imp {
 
             let initial_datetime = self.calendar_date_start.date();
 
-            let client = self.client.clone();
+            let db = self.db.clone();
             let sender = self.sender.clone();
 
             self.rt.spawn(async move {
-                Server::save_waiting()
+                if let Err(err) = Client::new()
                     .await
-                    .expect("failed to send save waiting signal");
+                    .expect("failed to get client")
+                    .save()
+                    .await
+                {
+                    eprintln!("Error: failed to send save message: {err}")
+                }
 
                 let date_start = date_glib_to_chrono(&initial_datetime);
                 let date_end = date_start.checked_add_days(Days::new(1)).unwrap();
 
-                let apps_usage = client
+                let apps_usage = db
                     .get_apps_usage(date_start, date_end)
                     .await
                     .expect("failed to get apps usage");
@@ -203,7 +208,7 @@ mod imp {
                 .enable_all()
                 .build()
                 .expect("failed to buid tokio runtime");
-            let client = rt.block_on(Client::new()).expect("failed to get client");
+            let db = rt.block_on(SqliteDB::new()).expect("failed to get client");
             let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
             HyprlandAppTimerGuiWindow {
                 calendar_date_start: Default::default(),
@@ -213,7 +218,7 @@ mod imp {
                 sender,
                 receiver: RefCell::new(Some(receiver)),
                 rt,
-                client: Arc::new(client),
+                db: Arc::new(db),
                 pie_chart: Default::default(),
             }
         }
